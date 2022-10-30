@@ -1,9 +1,11 @@
+from tkinter import E
 from urllib.request import urlopen
 from  bs4 import BeautifulSoup as soup
 import json  
 import requests
 from random import randint
 import hashlib   #进行哈希加密
+import time         #导入时间计算模块计算access_token结束时间
 #验证token的
 def auth(nonce,timestamp):
     token = "fenghaojie" #请按照公众平台官网\基本配置中信息填写
@@ -62,16 +64,18 @@ def weather(content):
     return string
 
 
-def talks_robot(content = '你叫什么名字', source = '0'):
-    api_url = 'http://www.tuling123.com/openapi/api'         #https://werobot.readthedocs.io/zh_CN/latest/start.html 这个是开发文档
-    api_key = '8cbd75edbcb3477dab307106240ae53e' #请填入自己申请的图灵付费api_key
-    data = {'key': api_key, 'info': content, 'userid': 'hello'}  
-    data=json.dumps(data) 
-    req = requests.post(api_url, data=data).text
-    reply = json.loads(req)['text']
-    return reply
 
-#回复吃饭
+def talks_robot(content = '你叫什么名字', source = '0'):
+    head={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.53"}
+    try:
+        sess = requests.get('https://api.ownthink.com/bot?appid=xiaosi&spoken=%s'%content,headers=head)
+        answer = sess.text
+    except:
+        answer={'message': 'success', 'data': {'type': 5000, 'info': {'text': '亲娘嘞,服务暂停了'}}}
+    answer =(json.loads(answer))["data"]
+    return answer["info"]["text"]
+
+#----------------------------------------------------------回复吃饭-----------------------------------------------
 def lunch():
     with open('lunch.txt') as file:
         foodlist=file.readlines()
@@ -83,3 +87,17 @@ def lunch():
 🍢{}
 教程:{}'''.format(food[0],food[1],food[2],food[3])
         return food
+def get_acess_token():
+        #定义请求地址
+        url='https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx7ce93198fa95c2b5&secret=66f5ea9b06da6e7fbc11fd0fa8f50f05'
+        html=urlopen(url)
+        html=html.read().decode()
+        first_dict=eval(html)         #read()之后是字节 decode() 或者str()都可以转换成字符串  再用eval转换为字典
+                                        #econd_dict=json.loads(html.read().decode())  #两种方式将字典格式的字符串转换为字典 
+        #接收响应  拿到 access_token  expires_in
+        res=first_dict
+        print(res)
+        #设置过期时间
+        overtime=time.time()+res['expires_in']-300
+        with open('save_token.txt','w') as file:
+            file.writelines(res['access_token'])
